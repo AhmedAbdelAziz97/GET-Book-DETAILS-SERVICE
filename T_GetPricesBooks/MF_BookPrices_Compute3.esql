@@ -1,0 +1,97 @@
+
+CREATE COMPUTE MODULE MF_BookPrices_HandleResponses
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		-- ana delwa2ti el reply beta3 kol BE Ha5'do Fe Shakel BLOB typ ha3ref mnwen any beta3 el xml w any beta3 el DFDL FA H3MEL Procedure
+		CALL CopyMessageHeaders();
+	
+		DECLARE rc BOOLEAN;
+		DECLARE InRef REFERENCE TO InputRoot.BLOB.BLOB; -- el msg eli gay BLOB
+		DECLARE OutRef REFERENCE TO OutputRoot; 
+		DECLARE InPropRef REFERENCE TO InputProperties; -- B3mel Refrance 3la el Properties  
+		CALL ConvertToXML(InRef ,OutRef,InPropRef) INTO rc; -- LAZEM Te5'ali el fuction te3mel into fe variable ya ema hayedi error "rc" deh hatezher b TRUE LW el procedure RUNet W FALSE lw la2 
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;
+
+
+
+CREATE COMPUTE MODULE MF_BookPrices_HandleResponsesAggReply
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		-- CALL CopyMessageHeaders();
+		-- CALL CopyEntireMessage();
+		DECLARE InRef REFERENCE TO InputRoot.ComIbmAggregateReplyBody;
+		CREATE FIELD OutputRoot.XMLNSC.Books;
+		DECLARE OutRef REFERENCE TO OutputRoot.XMLNSC.Books;
+
+		SET OutRef.Book1.titel = InRef.BE1.XMLNSC.Books.Book1.titel;
+		SET OutRef.Book1.price = InRef.BE1.XMLNSC.Books.Book1.price;
+		SET OutRef.Book2.titel = InRef.BE2.XMLNSC.Books.Book2.titel;
+		SET OutRef.Book2.price = InRef.BE2.XMLNSC.Books.Book2.price;
+		SET OutRef.Book3.titel = InRef.BE3.XMLNSC.Books.Book3.titel;
+		SET OutRef.Book3.price = InRef.BE3.XMLNSC.Books.Book3.price;
+
+
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;
+
+
+
+-- hena ha3mel procedure t convert eli gayli li exml eli harod beh 
+CREATE PROCEDURE ConvertToXML (IN InRef REFERENCE , IN OutRef REFERENCE , IN InPropRef REFERENCE) RETURNS CHARACTER
+BEGIN
+	DECLARE Encoding INTEGER InPropRef.Encoding ;
+	DECLARE CCSID INTEGER InPropRef.CodedCharSetId;
+	IF STARTSWITH (InRef , X'3c') THEN -- ana b check b hexa decimal beta3 el body nafso | LAZEM Akteb X 3lshan ye3raf eni dah hexa decimal 
+		
+		CREATE LASTCHILD OF OutRef DOMAIN 'XMLNSC' PARSE (InRef,Encoding,CCSID); -- b parse el msg eli gayalii -- PARSE Beta5'od 3 7agat (el msg eli hate3melha encode w encode w CCSID )
+		
+	ELSEIF STARTSWITH (InRef , X'7b') THEN -- el JSON Beyebda2 B 7b LMA tela2ai 7b 7Awel el msg li json then to XMLNSC
+		
+		CREATE LASTCHILD OF OutRef DOMAIN 'JSON' PARSE (InRef,Encoding,CCSID); -- hena b7wel el tree li json 
+		-- ma7tageen tanii n7awelha l xmlnsc because el MSG gay JSON fe Shakel BLOB F mayenfa3sh a7welaha li  3la tool li Xmlnsc Lazem el AWEL A7awelaha li el asel beta3ha eli howa json w 3la assas el JSON A5'od Rad el BE W A7oto F XMLNCS
+		CREATE LASTCHILD OF OutRef DOMAIN 'XMLNSC';
+		
+		SET OutRef.XMLNSC.Books.Book2.titel = OutRef.JSON.Data.Body.Book1.titel;
+		SET OutRef.XMLNSC.Books.Book2.price = OutRef.JSON.Data.Body.Book1.price;
+		
+		DELETE FIELD OutRef.JSON;
+	ELSE
+		CREATE LASTCHILD OF OutRef DOMAIN 'DFDL' PARSE (InRef ENCODING Encoding CCSID CCSID TYPE '{}:Book' SET '{T_GetPriceBooks_DFDL}');
+		CREATE LASTCHILD OF OutRef DOMAIN 'XMLNSC';
+		SET OutRef.XMLNSC.Books.Book3.titel = OutRef.DFDL.Book.record.titel;
+		SET OutRef.XMLNSC.Books.Book3.price = OutRef.DFDL.Book.record.price;
+		DELETE FIELD OutRef.DFDL;
+	END IF;
+	RETURN OutRef;
+END;

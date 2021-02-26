@@ -1,0 +1,118 @@
+
+
+
+
+
+
+DECLARE ns NAMESPACE 'http:///Books/BooksXSD.xsd';
+CREATE COMPUTE MODULE MF_BookPrices_PrepReq1
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		
+		DECLARE InRef REFERENCE to InputRoot.XMLNSC.Body.Books.[>];
+		
+		WHILE LASTMOVE(InRef) DO
+				
+			IF CONTAINS(FIELDNAME(InRef), 'Book1') THEN  
+				CALL CopyMessageHeaders();
+				SET OutputRoot.JSON.Data.Body.Book1.titel = InRef.titel; 
+				MOVE InRef NEXTSIBLING;
+				 PROPAGATE TO TERMINAL 0;
+				
+			ELSEIF CONTAINS(FIELDNAME(InRef), 'Book2') THEN
+				CALL CopyMessageHeaders();
+				SET OutputRoot.XMLNS.Body.Books.Book2.titel = InRef.titel;
+				MOVE InRef NEXTSIBLING;
+				 PROPAGATE TO TERMINAL 1;
+				
+				ELSE
+				CALL CopyMessageHeaders();
+         		SET OutputRoot.Properties.MessageSet = '{Book_DFDL}';
+         		SET OutputRoot.Properties.MessageType = '{}:Book';
+         		SET OutputRoot.DFDL.Book.record.titel = InRef.titel;
+         		MOVE InRef NEXTSIBLING;
+		        PROPAGATE TO TERMINAL 2;
+		END IF;		
+		END WHILE;
+		RETURN FALSE;
+	--	DECLARE InRef REFERENCE TO InputRoot.XMLNSC.Books;
+	--	SET OutputRoot.XMLNSC.Books.Book1 = InRef.Book1;
+		--RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;
+
+
+
+
+/*
+CREATE COMPUTE MODULE MF_BookPrices_PrepReq2
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		CALL CopyMessageHeaders();
+		-- CALL CopyEntireMessage();
+		DECLARE InRef REFERENCE TO InputRoot.XMLNSC.Books;
+		SET OutputRoot.JSON.Data.Book2 = InRef.Book2;
+
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;
+
+
+
+
+
+CREATE COMPUTE MODULE MF_BookPrices_PrepReq3
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		CALL CopyMessageHeaders();
+		-- CALL CopyEntireMessage();
+		SET OutputRoot.Properties.MessageSet = '{Books}';
+		SET OutputRoot.Properties.MessageType = '{}:Books';
+		DECLARE InRef REFERENCE TO InputRoot.XMLNSC.Books;
+		SET OutputRoot.DFDL.Books.Books.Book = InRef.Book3;
+
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;*/

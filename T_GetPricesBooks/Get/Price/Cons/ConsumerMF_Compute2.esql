@@ -1,0 +1,14 @@
+BROKER SCHEMA Get.Price.Cons
+
+
+CREATE COMPUTE MODULE ConsumerMF_Compute2
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		
+		DECLARE inRef REFERENCE TO InputRoot.XMLNSC.bookstore.books;
+		SET OutputRoot.DFDL.T_GetPriceBooksApp.Book3.Title = inRef.Book3.title;
+		RETURN TRUE;
+	END;
+
+	
+END MODULE;

@@ -1,0 +1,16 @@
+
+
+CREATE COMPUTE MODULE DFDL_Compute
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		
+		DECLARE InRef REFERENCE TO InputRoot.DFDL.Book.record.titel;
+		
+		SET OutputRoot.Properties.MessageSet = '{T_GetPriceBooks_DFDL}';
+        SET OutputRoot.Properties.MessageType = '{}:Book';
+		SET OutputRoot.MQMD.CorrelId = InputRoot.MQMD.MsgId;
+		SET OutputRoot.DFDL.Book.record.titel = InRef;
+		SEt OutputRoot.DFDL.Book.record.price = 100;
+		RETURN TRUE;
+	END;
+END MODULE;

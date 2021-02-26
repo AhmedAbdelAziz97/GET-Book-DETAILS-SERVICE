@@ -1,0 +1,14 @@
+
+
+CREATE COMPUTE MODULE XML_Compute
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		
+		DECLARE InRef REFERENCE TO InputRoot.XMLNSC.Body.Books.Book2.titel;
+		SET OutputRoot.MQMD.CorrelId = InputRoot.MQMD.MsgId;
+		SET OutputRoot.XMLNSC.Books.Book1.titel =  InRef;
+		SEt OutputRoot.XMLNSC.Books.Book1.price = 500;
+	
+		RETURN TRUE;
+	END;
+END MODULE;

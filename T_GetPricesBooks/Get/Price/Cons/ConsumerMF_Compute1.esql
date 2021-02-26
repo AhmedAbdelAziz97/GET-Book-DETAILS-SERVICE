@@ -1,0 +1,12 @@
+BROKER SCHEMA Get.Price.Cons
+
+
+CREATE COMPUTE MODULE ConsumerMF_Compute1
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		
+		SET OutputRoot.XMLNSC.bookstore.BOOK1.title = InputRoot.XMLNSC.bookstore.books.Book1.title;
+		RETURN TRUE;
+	END;
+
+END MODULE;

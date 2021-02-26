@@ -1,0 +1,69 @@
+BROKER SCHEMA Get.Price.Cons
+
+
+CREATE COMPUTE MODULE ConsumerFanOutMF_Compute
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		DECLARE InRef REFERENCE to InputRoot.XMLNSC.Body.Books.[>];
+		
+		WHILE LASTMOVE(InRef) DO
+				
+			IF CONTAINS(FIELDNAME(InRef), 'Book1') THEN  
+				 -- lazem t 7afez 3la el header w enta raye7 lil BE L2EN el hrader hatkoon Shayla 7aga ana hasta5'dama b3ed keda
+				CALL CopyMessageHeaders();
+				SET OutputRoot.JSON.Data.Body.Book1.titel = InRef.titel; 
+				MOVE InRef NEXTSIBLING;
+				 PROPAGATE TO TERMINAL 1;
+				
+			ELSEIF CONTAINS(FIELDNAME(InRef), 'Book2') THEN
+				CALL CopyMessageHeaders();
+				SET OutputRoot.XMLNS.Body.Books.Book2.titel = InRef.titel;
+				MOVE InRef NEXTSIBLING;
+				 PROPAGATE TO TERMINAL 0;
+				
+				ELSE
+				CALL CopyMessageHeaders();
+				-- hena b3mel over ride li ep properties
+				-- el DFDL M3amletah mo5'talfi shoya 3n el XMLNSC W JSON el msg w heya tal3a el msgset property beteb2a fadya f ha3mel override 
+         		SET OutputRoot.Properties.MessageSet = '{T_GetPriceBooks_DFDL}';
+         		SET OutputRoot.Properties.MessageType = '{}:Book';
+         		
+         		SET OutputRoot.DFDL.Book.record.titel = InRef.titel;
+         		MOVE InRef NEXTSIBLING;
+		        PROPAGATE TO TERMINAL 2;
+		END IF;		
+		END WHILE;
+		RETURN FALSE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;
+/* my input 
+<Body>
+	<Books>
+		<Book1>
+			<titel>Everyday Italian</titel>
+		</Book1>
+		
+		<Book2>
+			<titel>Harry Potter</titel>
+		</Book2>
+
+		<Book3>
+			<titel>Star Wars</titel>
+		</Book3>
+	</Books>
+</Body>
+*/
